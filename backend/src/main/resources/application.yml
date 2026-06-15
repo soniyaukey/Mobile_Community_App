@@ -1,0 +1,45 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: local-services-backend
+  
+  datasource:
+    url: jdbc:h2:mem:localservicesdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+  
+
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: UTC
+
+jwt:
+  secret: ${JWT_SECRET:localServicesSecretKey2024VeryLongSecretKeyForJWTTokenGeneration}
+  expiration: 86400000  # 24 hours in milliseconds
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.localservices: DEBUG
+    org.springframework.security: DEBUG
+
