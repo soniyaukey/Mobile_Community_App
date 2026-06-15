@@ -1,0 +1,140 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User } from '../types';
+import apiService from '../services/api';
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: { email: string; password: string; name: string; phone?: string; role?: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (data: Partial<User>) => Promise<void>;
+}
+
+export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadStoredAuth();
+  }, []);
+
+  const loadStoredAuth = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      const storedUser = await AsyncStorage.getItem('user');
+
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error('Error loading stored auth:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await apiService.login(email, password);
+      const { token: authToken, userId, email: userEmail, name: userName, role: userRole } = response;
+
+      // Construct User object from backend response
+      const userData: User = {
+        id: userId,
+        email: userEmail,
+        name: userName,
+        role: userRole,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+
+      await AsyncStorage.setItem('authToken', authToken);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+
+      setToken(authToken);
+      setUser(userData);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const register = async (data: { email: string; password: string; name: string; phone?: string; role?: string }) => {
+    try {
+      const response = await apiService.register(data);
+      const { token: authToken, userId, email: userEmail, name: userName, role: userRole } = response;
+
+      // Construct User object from backend response
+      const userData: User = {
+        id: userId,
+        email: userEmail,
+        name: userName,
+        role: userRole,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        phone: data.phone
+      };
+
+      await AsyncStorage.setItem('authToken', authToken);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+
+      setToken(authToken);
+      setUser(userData);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  const updateUser = async (data: Partial<User>) => {
+    try {
+      const response = await apiService.updateProfile(data);
+      setUser(response);
+      await AsyncStorage.setItem('user', JSON.stringify(response));
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        isAuthenticated: !!token && !!user,
+        login,
+        register,
+        logout,
+        updateUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
