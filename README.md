@@ -181,6 +181,7 @@ This project is released under the **MIT License** and is intended for education
 
 ---
 
+![image alt](https://github.com/soniyaukey/Mobile_Community_App/blob/541b8ae624707dbe1d7d427a9a576ba7c77f341f/Screenshot%202026-06-14%20120241.png)
 ## 👨‍💻 Author
 
 Developed as a community service marketplace application to simplify access to trusted local services.
